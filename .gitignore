@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+venv/
+.env
+.env.local
+*.log
+*.tar.zst
+nova.db
+nova.db-journal
+.bybit_oauth_tokens.json
+.DS_Store
+.vscode/
+.idea/
+docs/*.tmp
