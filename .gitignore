@@ -12,3 +12,7 @@ nova.db-journal
 .vscode/
 .idea/
 docs/*.tmp
+.env
+venv/
+__pycache__/
+nova.db
