@@ -1,18 +1,33 @@
-__pycache__/
-*.py[cod]
-venv/
+# Secrets
 .env
-.env.local
-*.log
-*.tar.zst
+.env.*
+*.env
+*.key
+*.secret
+
+# Databases (contain encrypted user data)
+*.db
+*.sqlite
+*.sqlite3
 nova.db
-nova.db-journal
-.bybit_oauth_tokens.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+pip-log.txt
+
+# Logs
+*.log
+logs/
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Editor
 .vscode/
 .idea/
-docs/*.tmp
-.env
-venv/
-__pycache__/
-nova.db
+*.swp
