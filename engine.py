@@ -1,106 +1,151 @@
-"""Intent parser: robust extraction using entity lookup + LLM fallback."""
+"""Intent parser: fast entity lookup -> optional LLM fallback (disabled by default).
+
+Python 3.8+ compatible (no PEP 604 unions).
+"""
 import os
 import re
 import json
 import requests
 
 LLM_URL = os.environ.get("LLM_URL", "http://127.0.0.1:8080")
+LLM_ENABLED = os.environ.get("LLM_ENABLED", "0") == "1"
 
-# 1. Known dictionary maps to prevent false matches
 KNOWN_EXCHANGES = ["okx", "bybit", "binance", "coinbase", "kraken", "kucoin"]
+
 KNOWN_TOKENS = {
     "solana": "SOL", "sol": "SOL",
     "bitcoin": "BTC", "btc": "BTC",
     "ethereum": "ETH", "eth": "ETH",
     "cardano": "ADA", "ada": "ADA",
     "ripple": "XRP", "xrp": "XRP",
+    "dogecoin": "DOGE", "doge": "DOGE",
+    "polkadot": "DOT", "dot": "DOT",
+    "chainlink": "LINK", "link": "LINK",
 }
 
-def _sym(raw_symbol: str) -> str:
-    cleaned = raw_symbol.upper().strip()
-    return cleaned if cleaned.endswith("USDT") else f"{cleaned}USDT"
+STOP_WORDS = {
+    "what", "whats", "how", "doing", "is", "the", "a", "an",
+    "this", "that", "from", "with", "me", "my",
+    "price", "buy", "sell", "long", "short", "balance",
+    "usd", "usdt", "dollars", "dollar", "worth", "value", "trading",
+} | set(KNOWN_EXCHANGES) | set(KNOWN_TOKENS.keys())
 
-def _extract_intent_fast(text: str) -> dict:
-    t_lower = text.lower()
-    
-    # Extract action
-    action = "price"
-    if any(k in t_lower for k in ["buy", "long"]):
+
+def _sym(raw):
+    """Normalize a symbol to XXXUSDT."""
+    s = str(raw).upper().strip()
+    if not s:
+        return None
+    return s if s.endswith("USDT") else s + "USDT"
+
+
+def _extract_intent_fast(text):
+    """Rule-based extraction. Returns dict or None if it can't decide."""
+    t = text.lower()
+
+    # ── action ─────────────────────────────────────────────
+    action = None
+    if re.search(r"\b(buy|long)\b", t):
         action = "buy"
-    elif any(k in t_lower for k in ["sell", "short"]):
+    elif re.search(r"\b(sell|short)\b", t):
         action = "sell"
-    elif any(k in t_lower for k in ["balance", "my balance"]):
+    elif "balance" in t:
         action = "balance"
+    elif re.search(r"\b(help|commands?)\b", t):
+        action = "help"
+    elif re.search(r"\b(price|trading|worth|value|doing|what|whats|how)\b", t):
+        action = "price"
 
-    # Extract exchange (match anywhere in sentence)
-    found_exchange = "bybit"  # default
+    # ── exchange ───────────────────────────────────────────
+    exchange = None
     for ex in KNOWN_EXCHANGES:
-        if re.search(r'\b' + ex + r'\b', t_lower):
-            found_exchange = ex
+        if re.search(r"\b" + ex + r"\b", t):
+            exchange = ex
             break
 
-    # Extract symbol (match mapped crypto name or explicit ticker)
-    found_symbol = None
-    for name, ticker in KNOWN_TOKENS.items():
-        if re.search(r'\b' + name + r'\b', t_lower):
-            found_symbol = _sym(ticker)
-            break
-            
-    if not found_symbol:
-        # Fallback regex for raw ticker patterns (e.g., SOLUSDT or 3-5 char tickers)
-        raw_match = re.search(r'\b([a-zA-Z]{3,5})(usdt)?\b', text, re.I)
-        if raw_match and raw_match.group(1).lower() not in ["what", "this", "from", "with", "that"]:
-            found_symbol = _sym(raw_match.group(1))
-
-    # Extract quantity if present
-    qty = None
-    qty_match = re.search(r'\$?([\d.]+)\s*(usd|dollars)?', t_lower)
-    if qty_match and action in ["buy", "sell"]:
-        try:
-            qty = float(qty_match.group(1))
-        except ValueError:
-            pass
-
-    if found_symbol or action == "balance":
+    # ── balance / help never carry a symbol ────────────────
+    if action in ("balance", "help"):
         return {
             "action": action,
-            "symbol": found_symbol,
-            "exchange": found_exchange,
-            "qty_usd": qty
+            "symbol": None,
+            "exchange": exchange or "bybit",
+            "qty_usd": None,
         }
-    
-    return None
 
-def parse(text: str) -> dict:
-    """Fast entity rule match -> Fallback to optimized single-slot LLM."""
+    # ── symbol from known names ────────────────────────────
+    symbol = None
+    for name, ticker in KNOWN_TOKENS.items():
+        if re.search(r"\b" + name + r"\b", t):
+            symbol = _sym(ticker)
+            break
+
+    # ── fallback: raw ticker pattern, filtered ─────────────
+    if not symbol and action in ("price", "buy", "sell"):
+        for m in re.finditer(r"\b([A-Za-z]{2,6})(USDT)?\b", text):
+            candidate = m.group(1).lower()
+            if candidate not in STOP_WORDS:
+                symbol = _sym(m.group(1))
+                break
+
+    # ── quantity ───────────────────────────────────────────
+    qty = None
+    if action in ("buy", "sell"):
+        qm = re.search(r"\$?\s*([\d]+(?:\.\d+)?)\s*(?:usd|dollars?)?", t)
+        if qm:
+            try:
+                qty = float(qm.group(1))
+            except ValueError:
+                qty = None
+
+    # Can't act on price/buy/sell without a symbol
+    if action in ("price", "buy", "sell") and symbol is None:
+        return None
+
+    if action is None:
+        return None
+
+    return {
+        "action": action,
+        "symbol": symbol,
+        "exchange": exchange or "bybit",
+        "qty_usd": qty,
+    }
+
+
+def parse(text):
+    """Fast rules first, optional LLM fallback if enabled."""
     result = _extract_intent_fast(text)
     if result:
         return result
+    if not LLM_ENABLED:
+        return {"action": "unknown", "raw": text}
     return _llm_parse(text)
 
-def _llm_parse(text: str) -> dict:
-    prompt = (
-        "Extract intent from input. Output strictly valid JSON without explanation.\n"
-        'JSON Schema: {"action": "price|buy|sell|balance", "symbol": "STRING", "exchange": "STRING", "qty_usd": float}\n'
-        f'Input: "{text}"\nJSON:'
-    )
 
+def _llm_parse(text):
+    """Optional LLM fallback. Disabled unless LLM_ENABLED=1."""
+    prompt = (
+        "Extract intent. Output only JSON.\n"
+        'Schema: {"action":"price|buy|sell|balance|unknown",'
+        '"symbol":"STRING|null","exchange":"STRING|null","qty_usd":number|null}\n'
+        'Input: "' + text + '"\nJSON:'
+    )
     payload = {
         "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 48,
-        "temperature": 0.0
+        "max_tokens": 64,
+        "temperature": 0.0,
     }
-
     try:
-        r = requests.post(f"{LLM_URL}/v1/chat/completions", json=payload, timeout=120)
+        r = requests.post(LLM_URL + "/v1/chat/completions", json=payload, timeout=15)
         content = r.json()["choices"][0]["message"]["content"].strip()
-        match = re.search(r"\{.*\}", content, re.DOTALL)
-        if match:
-            parsed = json.loads(match.group(0))
+        m = re.search(r"\{.*\}", content, re.DOTALL)
+        if m:
+            parsed = json.loads(m.group(0))
             if parsed.get("symbol"):
                 parsed["symbol"] = _sym(parsed["symbol"])
+            if parsed.get("action") == "balance":
+                parsed["symbol"] = None
             return parsed
-    except Exception:
-        pass
-    
-    return {"action": "unknown"}
+    except Exception as e:
+        print("[engine] LLM fallback failed:", e)
+    return {"action": "unknown", "raw": text}

@@ -11,6 +11,7 @@ app = Flask(__name__)
 DB_PATH = os.path.expanduser(os.environ.get("NOVA_DB", "./nova.db"))
 CLIENT_ID = os.environ["BYBIT_CLIENT_ID"]
 CLIENT_SECRET = os.environ["BYBIT_CLIENT_SECRET"]
+BROKER_CODE   = os.environ.get("BROKER_CODE", "Kr000820")
 TOKEN_URL = "https://api2.bybit.com/oauth/v1/public/access_token"
 OPENAPI_URL = "https://api2.bybit.com/oauth/v1/resource/restrict/openapi"
 
@@ -50,7 +51,13 @@ def callback():
     api_key = r2["result"]["api_key"]
     api_secret = r2["result"]["api_secret"]
 
-    tg_id = int(state.replace("tg-", "")) if state.startswith("tg-") else None
+    if state.startswith("tg-"):
+        tg_id = int(state.replace("tg-", ""))
+    elif state == BROKER_CODE:
+        return ("⚠️ Received broker code but no Telegram ID. "
+                "Please reconnect via /connect in Telegram."), 400
+    else:
+        return "❌ Invalid state", 400
     if tg_id:
         with db() as c:
             c.execute("""

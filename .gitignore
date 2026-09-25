@@ -1,18 +1,33 @@
-__pycache__/
-*.py[cod]
-venv/
+# Secrets
 .env
-.env.local
-*.log
-*.tar.zst
+*.env
+*.key
+*.secret
+
+# Databases
 nova.db
-nova.db-journal
-.bybit_oauth_tokens.json
+*.db
+*.sqlite
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Backups
+*.bak
+*.bak.*
+*.old
+*.save
+
+# Logs
+*.log
+logs/
+
+# OS
 .DS_Store
+
+# Editor
 .vscode/
 .idea/
-docs/*.tmp
-.env
-venv/
-__pycache__/
-nova.db
