@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Nova Global Keys — AI Agents for Real Money</title>
+  <meta name="description" content="Multi-tenant AI agent stack. Real CEX integration. Real on-chain settlement. Zero custody.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◉</text></svg>">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">NO<span>VA</span></div>
+      <nav>
+        <a class="nav-link" href="app.html">Login</a>
+        <a class="nav-link" href="https://github.com/rizbot4u" target="_blank">GitHub</a>
+      </nav>
+    </header>
+
+    <h1>AI agents that move real money — safely.</h1>
+    <p class="sub">
+      Multi-tenant agentic infrastructure. Real CEX integration. Real on-chain settlement on Base Mainnet. The AI never touches a private key.
+    </p>
+
+    <a class="btn" href="https://t.me/Novaglobalkeysbot" target="_blank">Try the live bot →</a>
+    <a class="btn secondary" href="app.html">Open the dashboard</a>
+
+    <div class="grid" style="margin-top: 3rem;">
+      <div class="card">
+        <h3>🧠 Ask in plain English</h3>
+        <p>"What is digital gold worth" → LLM picks the BTC ticker skill and executes on Bybit V5.</p>
+      </div>
+      <div class="card">
+        <h3>🪙 Real DKHYR on Base Mainnet</h3>
+        <p>1 DKHYR per Telegram user. Real ERC-20 transfer. Verifiable on Basescan.</p>
+        <span class="proof">0xc3bdc6354929180eca8d4ece6c90d234f2959bd06cada69513bdaebb57fdc0b2</span>
+      </div>
+      <div class="card">
+        <h3>🔐 Zero custody, vault-backed keys</h3>
+        <p>Per-tenant AES-256-GCM vaults. Every action audit-logged. Every write requires confirmation.</p>
+      </div>
+      <div class="card">
+        <h3>📊 Live stack status</h3>
+        <p>Bridge + Registry + LLM. <span id="status-badge" class="badge wait">checking…</span></p>
+      </div>
+    </div>
+
+    <footer>
+      Nova Global Keys · Bybit Broker Kr000820 · Base Mainnet
+    </footer>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    (async () => {
+      const el = document.getElementById('status-badge');
+      try {
+        const r = await fetch(window.NOVA_CONFIG.WORKER_URL + '/health');
+        if (r.ok) { el.textContent = 'online ✅'; el.className = 'badge ok'; }
+        else throw new Error();
+      } catch {
+        el.textContent = 'offline';
+        el.className = 'badge err';
+      }
+    })();
+  </script>
+</body>
+</html>

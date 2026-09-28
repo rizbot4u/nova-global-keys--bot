@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Nova Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">NO<span>VA</span></div>
+      <nav>
+        <span id="user-info" class="nav-link"></span>
+        <button id="logout-btn" class="nav-link" style="background:none;border:none;cursor:pointer;font-family:inherit;font-size:0.9rem;">Logout</button>
+      </nav>
+    </header>
+
+    <div id="login-card" class="card">
+      <h3>Login to Nova</h3>
+      <p>Your tenant vault is isolated. Keys never leave the bridge.</p>
+      <div style="margin-top: 1rem;">
+        <label for="username">Username</label>
+        <input id="username" type="text" placeholder="owner1" autocomplete="username">
+        <label for="password">Password</label>
+        <input id="password" type="password" placeholder="••••••••" autocomplete="current-password">
+        <button id="login-btn" class="btn">Login</button>
+      </div>
+    </div>
+
+    <div id="dashboard" style="display:none;">
+      <h1>Dashboard</h1>
+      <p class="sub">Query skills, run agents, and check vault status — all tenant-isolated.</p>
+
+      <div class="grid">
+        <div class="card">
+          <h3>📊 Live ticker</h3>
+          <label for="symbol">Symbol</label>
+          <input id="symbol" type="text" value="BTCUSDT">
+          <button class="btn small" id="get-ticker">Get price</button>
+        </div>
+        <div class="card">
+          <h3>💰 Bybit balance</h3>
+          <p>Reads vaulted credentials via the bridge.</p>
+          <button class="btn small" id="get-balance" style="margin-top:1rem;">Fetch balance</button>
+        </div>
+        <div class="card">
+          <h3>🪙 DKHYR balance</h3>
+          <label for="wallet">Base wallet address</label>
+          <input id="wallet" type="text" placeholder="0x…">
+          <button class="btn small" id="get-dkhyr">Check balance</button>
+        </div>
+        <div class="card">
+          <h3>🧠 Run the AI agent</h3>
+          <label for="prompt">Ask anything</label>
+          <input id="prompt" type="text" placeholder="What is digital gold worth">
+          <button class="btn small" id="run-agent">Run agent</button>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 1rem;">
+        <h3>Result</h3>
+        <div id="result" class="result">No result yet. Try an action above.</div>
+      </div>
+    </div>
+
+    <footer>
+      Nova Global Keys · <a href="index.html" style="color:var(--muted);">home</a>
+    </footer>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
