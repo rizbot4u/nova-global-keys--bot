@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Try Nova — Live Demo</title>
+  <title>Nova Dashboard</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,57 +11,161 @@
     <header>
       <div class="logo">NO<span>VA</span></div>
       <nav>
+        <span id="status" class="badge wait">checking…</span>
         <a class="nav-link" href="index.html">Home</a>
-        <a class="nav-link" href="https://github.com/rizbot4u" target="_blank">GitHub</a>
       </nav>
     </header>
 
-    <h1>Try Nova — live</h1>
+    <h1>Dashboard</h1>
     <p class="sub">
-      The AI agent runs in Telegram. Tap any action and it opens the bot with your request pre-loaded.
-      No signup. Real execution.
+      Every button calls a real endpoint on the Nova stack. Live execution, real data, no mocks.
     </p>
 
     <div class="grid" style="margin-top: 2rem;">
+
       <div class="card">
-        <h3>📊 Get BTC price</h3>
-        <p>Live Bybit V5 ticker via Nova Bridge.</p>
-        <a class="btn small" href="https://t.me/Novaglobalkeysbot" target="_blank" style="margin-top:1rem;">Open Telegram →</a>
+        <h3>🩺 Stack health</h3>
+        <p>Pings Jarvis + Bridge for status.</p>
+        <button class="btn small" onclick="act('health')" style="margin-top:1rem;">Check</button>
       </div>
 
       <div class="card">
-        <h3>💰 Check Bybit balance</h3>
-        <p>Reads your per-tenant vaulted credentials.</p>
-        <a class="btn small" href="https://t.me/Novaglobalkeysbot" target="_blank" style="margin-top:1rem;">Open Telegram →</a>
+        <h3>📊 BTC price (Bybit)</h3>
+        <p>Live ticker via Bridge → Bybit V5.</p>
+        <button class="btn small" onclick="act('btc')" style="margin-top:1rem;">Get price</button>
       </div>
 
       <div class="card">
-        <h3>🪙 Receive 1 DKHYR</h3>
-        <p>Real ERC-20 transfer on Base Mainnet.</p>
-        <a class="btn small" href="https://t.me/Novaglobalkeysbot" target="_blank" style="margin-top:1rem;">Open Telegram →</a>
+        <h3>💰 My Bybit balance</h3>
+        <p>Reads your vaulted credentials.</p>
+        <button class="btn small" onclick="act('balance')" style="margin-top:1rem;">Fetch</button>
       </div>
 
       <div class="card">
-        <h3>🧠 Ask the AI agent</h3>
-        <p>Type anything — the LLM picks the skill.</p>
-        <a class="btn small" href="https://t.me/Novaglobalkeysbot" target="_blank" style="margin-top:1rem;">Open Telegram →</a>
+        <h3>🧠 Run the AI agent</h3>
+        <p>LLM picks a skill from your 16 registered ones.</p>
+        <button class="btn small" onclick="act('agent')" style="margin-top:1rem;">Run agent</button>
       </div>
+
+      <div class="card">
+        <h3>🌉 Bridge skills list</h3>
+        <p>All skills registered in Nova MCP Bridge.</p>
+        <button class="btn small" onclick="act('skills')" style="margin-top:1rem;">List</button>
+      </div>
+
+      <div class="card">
+        <h3>✅ Jarvis active skills</h3>
+        <p>All active skills in your tenant registry.</p>
+        <button class="btn small" onclick="act('registry')" style="margin-top:1rem;">List</button>
+      </div>
+
     </div>
 
-    <div class="card" style="margin-top: 2rem;">
-      <h3>🔐 Zero custody guarantee</h3>
-      <p>The AI never touches a private key. Every action requires confirmation. Every call is audit-logged.</p>
-    </div>
-
-    <div class="card">
-      <h3>🎯 On-chain proof</h3>
-      <p>Real DKHYR transfer on Base Mainnet — verified:</p>
-      <span class="proof">0xc3bdc6354929180eca8d4ece6c90d234f2959bd06cada69513bdaebb57fdc0b2</span>
+    <div class="card" style="margin-top: 1rem;">
+      <h3>Result</h3>
+      <div id="result" class="result">Tap a button above to run a real call.</div>
     </div>
 
     <footer>
-      Nova Global Keys · Bybit Broker Kr000820 · Base Mainnet
+      Nova Global Keys · <a href="index.html" style="color:var(--muted);">home</a>
     </footer>
   </div>
+
+  <script src="config.js"></script>
+  <script>
+    const C = window.NOVA_CONFIG;
+    const $ = (id) => document.getElementById(id);
+
+    function show(data) {
+      $('result').textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+    }
+
+    async function tryFetch(url, options = {}) {
+      try {
+        const r = await fetch(url, options);
+        const text = await r.text();
+        try { return JSON.parse(text); }
+        catch { return text; }
+      } catch (e) {
+        return { error: e.message };
+      }
+    }
+
+    async function act(action) {
+      show(`Running ${action}…`);
+
+      const bridgeHeaders = {
+        'Content-Type': 'application/json',
+        'X-Bridge-Token': C.BRIDGE_TOKEN,
+      };
+
+      // Bridge skill execute helper
+      const bridgeCall = (skill, params = {}) =>
+        tryFetch(`${C.BRIDGE_URL}/skills/execute`, {
+          method: 'POST',
+          headers: bridgeHeaders,
+          body: JSON.stringify({
+            skill_name: skill,
+            tenant_id: 'tenant_6517213957',
+            org_id: 'org_6517213957',
+            actor: 'web_demo',
+            parameters: params,
+          }),
+        });
+
+      switch (action) {
+        case 'health': {
+          const b = await tryFetch(`${C.BRIDGE_URL}/`);
+          const j = await tryFetch(`${C.JARVIS_URL}/`);
+          show({ bridge: b, jarvis: j });
+          break;
+        }
+
+        case 'btc':
+          show(await bridgeCall('bybit.ticker', { symbol: 'BTCUSDT', category: 'linear' }));
+          break;
+
+        case 'balance':
+          show(await bridgeCall('bybit.balance', {}));
+          break;
+
+        case 'skills': {
+          const r = await tryFetch(`${C.BRIDGE_URL}/skills/list`);
+          show(r);
+          break;
+        }
+
+        case 'registry': {
+          const r = await tryFetch(`${C.JARVIS_URL}/skills/active`);
+          show(r);
+          break;
+        }
+
+        case 'agent': {
+          // Ask Jarvis's LLM to pick a skill
+          const r = await tryFetch(`${C.JARVIS_URL}/agent/run`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: 'What is the BTC price?', payload: {} }),
+          });
+          show(r);
+          break;
+        }
+
+        default:
+          show('Unknown action');
+      }
+    }
+
+    // Health check on load
+    (async () => {
+      const b = await tryFetch(`${C.BRIDGE_URL}/`);
+      const ok = b && (b.service || b.version);
+      $('status').textContent = ok ? 'online ✅' : 'offline ❌';
+      $('status').className = ok ? 'badge ok' : 'badge err';
+    })();
+
+    window.act = act;
+  </script>
 </body>
 </html>
