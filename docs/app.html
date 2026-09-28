@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Nova Dashboard</title>
+  <title>Try Nova — Live Demo</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,67 +11,57 @@
     <header>
       <div class="logo">NO<span>VA</span></div>
       <nav>
-        <span id="user-info" class="nav-link"></span>
-        <button id="logout-btn" class="nav-link" style="background:none;border:none;cursor:pointer;font-family:inherit;font-size:0.9rem;">Logout</button>
+        <a class="nav-link" href="index.html">Home</a>
+        <a class="nav-link" href="https://github.com/rizbot4u" target="_blank">GitHub</a>
       </nav>
     </header>
 
-    <div id="login-card" class="card">
-      <h3>Login to Nova</h3>
-      <p>Your tenant vault is isolated. Keys never leave the bridge.</p>
-      <div style="margin-top: 1rem;">
-        <label for="username">Username</label>
-        <input id="username" type="text" placeholder="owner1" autocomplete="username">
-        <label for="password">Password</label>
-        <input id="password" type="password" placeholder="••••••••" autocomplete="current-password">
-        <button id="login-btn" class="btn">Login</button>
+    <h1>Try Nova — live</h1>
+    <p class="sub">
+      The AI agent runs in Telegram. Tap any action and it opens the bot with your request pre-loaded.
+      No signup. Real execution.
+    </p>
+
+    <div class="grid" style="margin-top: 2rem;">
+      <div class="card">
+        <h3>📊 Get BTC price</h3>
+        <p>Live Bybit V5 ticker via Nova Bridge.</p>
+        <a class="btn small" href="https://t.me/Novaglobalkeysbot" target="_blank" style="margin-top:1rem;">Open Telegram →</a>
+      </div>
+
+      <div class="card">
+        <h3>💰 Check Bybit balance</h3>
+        <p>Reads your per-tenant vaulted credentials.</p>
+        <a class="btn small" href="https://t.me/Novaglobalkeysbot" target="_blank" style="margin-top:1rem;">Open Telegram →</a>
+      </div>
+
+      <div class="card">
+        <h3>🪙 Receive 1 DKHYR</h3>
+        <p>Real ERC-20 transfer on Base Mainnet.</p>
+        <a class="btn small" href="https://t.me/Novaglobalkeysbot" target="_blank" style="margin-top:1rem;">Open Telegram →</a>
+      </div>
+
+      <div class="card">
+        <h3>🧠 Ask the AI agent</h3>
+        <p>Type anything — the LLM picks the skill.</p>
+        <a class="btn small" href="https://t.me/Novaglobalkeysbot" target="_blank" style="margin-top:1rem;">Open Telegram →</a>
       </div>
     </div>
 
-    <div id="dashboard" style="display:none;">
-      <h1>Dashboard</h1>
-      <p class="sub">Query skills, run agents, and check vault status — all tenant-isolated.</p>
+    <div class="card" style="margin-top: 2rem;">
+      <h3>🔐 Zero custody guarantee</h3>
+      <p>The AI never touches a private key. Every action requires confirmation. Every call is audit-logged.</p>
+    </div>
 
-      <div class="grid">
-        <div class="card">
-          <h3>📊 Live ticker</h3>
-          <label for="symbol">Symbol</label>
-          <input id="symbol" type="text" value="BTCUSDT">
-          <button class="btn small" id="get-ticker">Get price</button>
-        </div>
-        <div class="card">
-          <h3>💰 Bybit balance</h3>
-          <p>Reads vaulted credentials via the bridge.</p>
-          <button class="btn small" id="get-balance" style="margin-top:1rem;">Fetch balance</button>
-        </div>
-        <div class="card">
-          <h3>🪙 DKHYR balance</h3>
-          <label for="wallet">Base wallet address</label>
-          <input id="wallet" type="text" placeholder="0x…">
-          <button class="btn small" id="get-dkhyr">Check balance</button>
-        </div>
-        <div class="card">
-          <h3>🧠 Run the AI agent</h3>
-          <label for="prompt">Ask anything</label>
-          <input id="prompt" type="text" placeholder="What is digital gold worth">
-          <button class="btn small" id="run-agent">Run agent</button>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top: 1rem;">
-        <h3>Result</h3>
-        <div id="result" class="result">No result yet. Try an action above.</div>
-      </div>
+    <div class="card">
+      <h3>🎯 On-chain proof</h3>
+      <p>Real DKHYR transfer on Base Mainnet — verified:</p>
+      <span class="proof">0xc3bdc6354929180eca8d4ece6c90d234f2959bd06cada69513bdaebb57fdc0b2</span>
     </div>
 
     <footer>
-      Nova Global Keys · <a href="index.html" style="color:var(--muted);">home</a>
+      Nova Global Keys · Bybit Broker Kr000820 · Base Mainnet
     </footer>
   </div>
-
-  <div id="toast" class="toast"></div>
-
-  <script src="config.js"></script>
-  <script src="app.js"></script>
 </body>
 </html>
