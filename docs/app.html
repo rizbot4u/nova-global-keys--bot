@@ -16,53 +16,45 @@
       </nav>
     </header>
 
-    <!-- LOGIN -->
     <div id="login-view">
       <h1>Login to Nova</h1>
       <p class="sub">Your tenant vault is isolated. Keys never leave the bridge.</p>
       <div class="card">
         <label>Username</label>
-        <input id="username" type="text" value="owner1" autocomplete="username">
+        <input id="username" type="text" value="owner1">
         <label>Password</label>
-        <input id="password" type="password" value="password123" autocomplete="current-password">
+        <input id="password" type="password" value="password123">
         <button class="btn" id="login-btn">Login</button>
       </div>
     </div>
 
-    <!-- DASHBOARD -->
     <div id="dash-view" style="display:none;">
       <h1>Dashboard</h1>
-      <p class="sub">Every button calls a real endpoint through the Nova Worker.</p>
+      <p class="sub">Every button calls a real endpoint on the Nova stack.</p>
 
       <div class="grid" style="margin-top:2rem;">
         <div class="card">
           <h3>🩺 Stack health</h3>
-          <p>Bridge + Jarvis status.</p>
           <button class="btn small" onclick="act('health')" style="margin-top:1rem;">Check</button>
         </div>
         <div class="card">
           <h3>📊 BTC price</h3>
-          <p>Live Bybit V5 ticker.</p>
           <button class="btn small" onclick="act('btc')" style="margin-top:1rem;">Get price</button>
         </div>
         <div class="card">
           <h3>💰 Bybit balance</h3>
-          <p>Vault-backed read.</p>
           <button class="btn small" onclick="act('balance')" style="margin-top:1rem;">Fetch</button>
         </div>
         <div class="card">
           <h3>🧠 Run AI agent</h3>
-          <p>LLM picks the skill.</p>
           <button class="btn small" onclick="act('agent')" style="margin-top:1rem;">Run agent</button>
         </div>
         <div class="card">
           <h3>🌉 Bridge skills</h3>
-          <p>List all bridge skills.</p>
           <button class="btn small" onclick="act('skills')" style="margin-top:1rem;">List</button>
         </div>
         <div class="card">
           <h3>✅ Active registry skills</h3>
-          <p>Jarvis tenant skills.</p>
           <button class="btn small" onclick="act('registry')" style="margin-top:1rem;">List</button>
         </div>
       </div>
@@ -85,23 +77,17 @@
   const KEY = 'nova_jwt';
 
   function getToken() {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return null;
-    try {
-      const o = JSON.parse(raw);
-      if (o.exp && Date.now() > o.exp) { localStorage.removeItem(KEY); return null; }
-      return o.t;
-    } catch { return null; }
+    const r = localStorage.getItem(KEY);
+    if (!r) return null;
+    try { const o = JSON.parse(r); if (o.exp && Date.now() > o.exp) { localStorage.removeItem(KEY); return null; } return o.t; } catch { return null; }
   }
   function setToken(t) { localStorage.setItem(KEY, JSON.stringify({ t, exp: Date.now() + 3000*1000 })); }
   function clearToken() { localStorage.removeItem(KEY); }
 
-  function show(d) {
-    $('result').textContent = typeof d === 'string' ? d : JSON.stringify(d, null, 2);
-  }
+  function show(d) { $('result').textContent = typeof d === 'string' ? d : JSON.stringify(d, null, 2); }
 
   async function tryFetch(url, opts = {}) {
-    opts.headers = { ...(opts.headers || {}), 'ngrok-skip-browser-warning': 'true' };
+    opts.headers = { ...(opts.headers || {}), 'ngrok-skip-browser-warning': 'true', 'Bypass-Tunnel-Reminder': 'true' };
     try {
       const r = await fetch(url, opts);
       const txt = await r.text();
@@ -110,11 +96,9 @@
   }
 
   async function login() {
-    const u = $('username').value.trim();
-    const p = $('password').value;
     show('Logging in…');
-    const body = new URLSearchParams({ username: u, password: p });
-    const r = await tryFetch(`${C.WORKER_URL}/jarvis/token`, {
+    const body = new URLSearchParams({ username: $('username').value.trim(), password: $('password').value });
+    const r = await tryFetch(`${C.JARVIS_URL}/token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
@@ -136,20 +120,35 @@
     return tryFetch(url, opts);
   }
 
+  // Execute a bridge skill
+  async function bridgeCall(skill, params = {}) {
+    return tryFetch(`${C.BRIDGE_URL}/skills/execute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Bridge-Token': C.BRIDGE_TOKEN },
+      body: JSON.stringify({
+        skill_name: skill,
+        tenant_id: 'tenant_6517213957',
+        org_id: 'org_6517213957',
+        actor: 'web_demo',
+        parameters: params,
+      }),
+    });
+  }
+
   async function act(action) {
     show(`Running ${action}…`);
     switch (action) {
       case 'health': {
-        const b = await tryFetch(`${C.WORKER_URL}/api/health/bridge`);
-        const j = await tryFetch(`${C.WORKER_URL}/api/health/jarvis`);
+        const b = await tryFetch(`${C.BRIDGE_URL}/`);
+        const j = await tryFetch(`${C.JARVIS_URL}/`);
         show({ bridge: b, jarvis: j });
         break;
       }
-      case 'btc':      show(await authed(`${C.WORKER_URL}/api/ticker?symbol=BTCUSDT`)); break;
-      case 'balance':  show(await authed(`${C.WORKER_URL}/api/balance`)); break;
-      case 'skills':   show(await authed(`${C.WORKER_URL}/api/skills`)); break;
-      case 'registry': show(await authed(`${C.WORKER_URL}/api/skills/active`)); break;
-      case 'agent':    show(await authed(`${C.WORKER_URL}/api/agent/run`, {
+      case 'btc':      show(await bridgeCall('bybit.ticker', { symbol: 'BTCUSDT', category: 'linear' })); break;
+      case 'balance':  show(await bridgeCall('bybit.balance', {})); break;
+      case 'skills':   show(await tryFetch(`${C.BRIDGE_URL}/skills/list`)); break;
+      case 'registry': show(await authed(`${C.JARVIS_URL}/skills/active`)); break;
+      case 'agent':    show(await authed(`${C.JARVIS_URL}/agent/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: 'What is the BTC price?', payload: {} }),
@@ -163,10 +162,9 @@
     $('login-btn').addEventListener('click', login);
     $('logout-btn').addEventListener('click', logout);
     if (getToken()) { $('login-view').style.display = 'none'; $('dash-view').style.display = 'block'; }
-    // status ping
     (async () => {
-      const r = await tryFetch(`${C.WORKER_URL}/health`);
-      const ok = r && (r.ok === true || r === 'Telegram Proxy Active' || (typeof r === 'object' && !r.error));
+      const r = await tryFetch(`${C.BRIDGE_URL}/`);
+      const ok = r && (r.service || r.version);
       $('status').textContent = ok ? 'online ✅' : 'offline ❌';
       $('status').className = ok ? 'badge ok' : 'badge err';
     })();
